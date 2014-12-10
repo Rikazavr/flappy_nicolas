@@ -1,11 +1,12 @@
 'use strict';
 
-var Ground = function(game, x, y, frame) {
-  Phaser.TileSprite.call(this, this.game, x, y, width, height,'ground');
+var Ground = function (game, x, y, width, height){
+  Phaser.TileSprite.call(this, game, x, y, width, height,'ground');
   this.autoScroll(-200,0);
 
   this.game.physics.arcade.enableBody(this);
   this.body.allowGravity = false;
+  this.body.immovable = true;
 };
 
 Ground.prototype = Object.create(Phaser.TileSprite.prototype);
