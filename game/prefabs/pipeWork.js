@@ -1,3 +1,4 @@
+/* Full tutorial: http://codevinsky.ghost.io/phaser-2-0-tutorial-flappy-bird-part-4/ */
 'use strict';
 
 var Pipe = function(game, x, y, frame) {
@@ -6,14 +7,16 @@ var Pipe = function(game, x, y, frame) {
   this.game.physics.arcade.enableBody(this);
 
   this.body.allowGravity = false;
-  this.body.immovable = true; 
+  this.body.immovable = true;
   
 };
 
 Pipe.prototype = Object.create(Phaser.Sprite.prototype);
 Pipe.prototype.constructor = Pipe;
 
-Pipe.prototype.update = function() { 
+Pipe.prototype.update = function() {
+  // write your prefab's specific update code here
+  
 };
 
 module.exports = Pipe;

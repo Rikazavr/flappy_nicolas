@@ -1,19 +1,34 @@
 'use strict';
 
-var PipeGroup = function(game, x, y, frame) {
-  Phaser.Sprite.call(this, game, x, y, 'pipeGroup', frame);
+var Pipe = require('./pipe');
 
-  // initialize your prefab here
-  
+var PipeGroup = function(game, parent) {
+
+  Phaser.Group.call(this, game, parent);
+
+  this.topPipe = new Pipe(this.game, 0, 0, 1);
+  this.bottomPipe = new Pipe(this.game, 0, 440, 2);
+  this.add(this.topPipe);
+  this.add(this.bottomPipe);
+  this.hasScored = false;
+
+  this.setAll('body.velocity.x', -200);
 };
 
-PipeGroup.prototype = Object.create(Phaser.Sprite.prototype);
+PipeGroup.prototype = Object.create(Phaser.Group.prototype);
 PipeGroup.prototype.constructor = PipeGroup;
 
-PipeGroup.prototype.update = function() {
-  
-  // write your prefab's specific update code here
-  
-};
+ PipeGroup.prototype.update = function() {  
+ };
+
+PipeGroup.prototype.reset = function(x, y) {
+this.topPipe.reset(0,-50);
+this.bottomPipe.reset(0,440);
+this.x = x;
+this.y = y;
+this.setAll('body.velocity.x', -200);
+this.hasScored = false;
+this.exists = true;
+}; 
 
 module.exports = PipeGroup;
