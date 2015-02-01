@@ -25,20 +25,26 @@ var Bird = function(game, x, y, frame) {
   this.anchor.setTo(0.5, 0.5);
   this.animations.add('flap');
   this.animations.play('flap', 12, true);
+
   this.game.physics.arcade.enableBody(this);
-  
+  this.body.allowGravity = false; 
+
+  this.alive = false;
+
+  this.flapSound = this.game.add.audio('flap');
 };
 
 Bird.prototype = Object.create(Phaser.Sprite.prototype);
 Bird.prototype.constructor = Bird;
 
 Bird.prototype.update = function() {
-	if(this.angle < 90) {
+	if(this.angle < 90 && this.alive) {
     this.angle += 2.5;
-  }
+  } 
 };
 
 Bird.prototype.flap = function() { 
+  this.flapSound.play();
 	this.body.velocity.y = -400; 
 	this.game.add.tween(this).to({angle: -40}, 100).start();
 };
@@ -95,8 +101,8 @@ var PipeGroup = function(game, parent) {
 
   Phaser.Group.call(this, game, parent);
 
-  this.topPipe = new Pipe(this.game, 0, 0, 1);
-  this.bottomPipe = new Pipe(this.game, 0, 440, 2);
+  this.topPipe = new Pipe(this.game, 0, 0, 2);
+  this.bottomPipe = new Pipe(this.game, 0, 440, 1);
   this.add(this.topPipe);
   this.add(this.bottomPipe);
   this.hasScored = false;
@@ -107,8 +113,15 @@ var PipeGroup = function(game, parent) {
 PipeGroup.prototype = Object.create(Phaser.Group.prototype);
 PipeGroup.prototype.constructor = PipeGroup;
 
- PipeGroup.prototype.update = function() {  
+ PipeGroup.prototype.update = function() { 
+ 	this.checkWorldBounds(); 
  };
+
+PipeGroup.prototype.checkWorldBounds = function() {  
+  if(!this.topPipe.inWorld) {
+    this.exists = false;
+  }
+};
 
 PipeGroup.prototype.reset = function(x, y) {
 this.topPipe.reset(0,-50);
@@ -151,7 +164,7 @@ GameOver.prototype = {
 
   },
   create: function () {
-    var style = { font: '65px Arial', fill: '#ffffff', align: 'center'};
+    var style = { font: '45px Arial', fill: '#ffffff', align: 'center'};
     this.titleText = this.game.add.text(this.game.world.centerX,100, 'Game Over!', style);
     this.titleText.anchor.setTo(0.5, 0.5);
 
@@ -244,6 +257,7 @@ module.exports = Menu;
       // create and add a new Bird object
       this.bird = new Bird(this.game, 100, this.game.height/2);
       this.game.add.existing(this.bird);
+
       // create and add a group to hold our pipeGroup prefabs
       this.pipes = this.game.add.group();
        
@@ -253,39 +267,77 @@ module.exports = Menu;
        
       // add keyboard controls
       this.flapKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+      this.flapKey.onDown.addOnce(this.startGame, this);
       this.flapKey.onDown.add(this.bird.flap, this.bird);
-       
+
+
       // add mouse/touch controls
+      this.game.input.onDown.addOnce(this.startGame, this);
       this.game.input.onDown.add(this.bird.flap, this.bird);
-       
-      // keep the spacebar from propogating up to the browser
+
+
+      // keep the spacebar from propogating up to the browser     
       this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.SPACEBAR]);
        
-      // add a timer
-      this.pipeGenerator = this.game.time.events.loop(Phaser.Timer.SECOND * 1.25, this.generatePipes, this);
-      this.pipeGenerator.timer.start(); 
+      this.instructionGroup = this.game.add.group();
+      this.instructionGroup.add(this.game.add.sprite(this.game.width/2, 100,'getReady'));
+      this.instructionGroup.add(this.game.add.sprite(this.game.width/2, 325,'instructions'));
+      this.instructionGroup.setAll('anchor.x', 0.5);
+      this.instructionGroup.setAll('anchor.y', 0.5);
+
+      this.score = 0;
+      this.scoreText = this.game.add.bitmapText(this.game.width/2, 10, 'flappyfont',this.score.toString(), 24);
+      this.scoreText.visible = true;
+      this.scoreSound = this.game.add.audio('score');
     },
 
     update: function() {
-      this.game.physics.arcade.collide(this.bird, this.ground);
+      this.game.physics.arcade.collide(this.bird, this.ground, this.deathHandler, null, this);
+
+      this.pipes.forEach(function(pipeGroup) {
+       this.checkScore(pipeGroup);
+       this.game.physics.arcade.collide(this.bird, pipeGroup, this.deathHandler, null, this);
+      }, this);
     },
 
-    generatePipes: function() {
+    shutdown: function() {
+    this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
+    this.bird.destroy();
+    this.pipes.destroy();
+    },
+
+    startGame: function() {  
+        this.bird.body.allowGravity = true;
+        this.bird.alive = true;
+
+        // add a timer
+        this.pipeGenerator = this.game.time.events.loop(Phaser.Timer.SECOND * 1.25, this.generatePipes, this);
+        this.pipeGenerator.timer.start();
+
+        this.instructionGroup.destroy();
+    },
+
+    checkScore: function(pipeGroup) {  
+      if(pipeGroup.exists && !pipeGroup.hasScored && pipeGroup.topPipe.world.x <= this.bird.world.x) {
+        pipeGroup.hasScored = true;
+        this.score++;
+        this.scoreText.setText(this.score.toString());
+        this.scoreSound.play();
+      }
+    },
+
+  deathHandler: function() {
+    this.game.state.start('gameover');
+  },
+
+  generatePipes: function() {
     var pipeY = this.game.rnd.integerInRange(-100, 100);
     var pipeGroup = this.pipes.getFirstExists(false);
     if(!pipeGroup) {
-        pipeGroup = new PipeGroup(this.game, this.pipes);
+        pipeGroup = new PipeGroup(this.game, this.pipes);  
     }
     pipeGroup.reset(this.game.width, pipeY);
   }
-
-    //  generatePipes: function() { 
-    //  debugger; 
-    //    var pipeY = this.game.rnd.integerInRange(-100, 100);
-    //    var pipeGroup = new PipeGroup(this.game);
-    //    pipeGroup.x = this.game.width;
-    //    pipeGroup.y = pipeY;
-    // }
 };
 
 module.exports = Play;
@@ -378,15 +430,25 @@ module.exports = Play;
     this.asset = this.add.sprite(this.width/2, this.height/2, 'preloader');
     this.asset.anchor.setTo(0.5, 0.5);
 
+    this.load.bitmapFont('flappyfont', 'assets/fonts/flappyfont/flappyfont.png', 'assets/fonts/flappyfont/flappyfont.fnt');
+
     this.load.onLoadComplete.addOnce(this.onLoadComplete, this);
     this.load.setPreloadSprite(this.asset);
-    this.load.image('background', 'assets/back.jpg');
+    this.load.image('background', 'assets/back.png');
     this.load.image('ground', 'assets/ground.png');
     this.load.image('title', 'assets/title.png');
     this.load.image('startButton', 'assets/start-button.png');
 
     this.load.spritesheet('bird', 'assets/nicolas.png', 70, 51, 3);
     this.load.spritesheet('pipe', 'assets/pipes.png', 54,320, 2);
+
+    this.load.image('instructions', 'assets/instructions.png');  
+    this.load.image('getReady', 'assets/get-ready.png');
+
+    this.load.audio('score', 'assets/score.wav');
+    this.load.audio('flap', 'assets/flap.wav');
+    this.load.audio('pipeHit', 'assets/pipe-hit.wav');
+    this.load.audio('groundHit', 'assets/ground-hit.wav');
 
     },
     create: function() {

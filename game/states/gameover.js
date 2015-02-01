@@ -7,7 +7,7 @@ GameOver.prototype = {
 
   },
   create: function () {
-    var style = { font: '65px Arial', fill: '#ffffff', align: 'center'};
+    var style = { font: '45px Arial', fill: '#ffffff', align: 'center'};
     this.titleText = this.game.add.text(this.game.world.centerX,100, 'Game Over!', style);
     this.titleText.anchor.setTo(0.5, 0.5);
 
