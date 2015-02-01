@@ -29,8 +29,8 @@ PipeGroup.prototype.checkWorldBounds = function() {
 };
 
 PipeGroup.prototype.reset = function(x, y) {
-this.topPipe.reset(0,-50);
-this.bottomPipe.reset(0,440);
+this.topPipe.reset(25,-50);
+this.bottomPipe.reset(25,440);
 this.x = x;
 this.y = y;
 this.setAll('body.velocity.x', -200);

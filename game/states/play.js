@@ -1,7 +1,9 @@
   'use strict';
   var Bird = require('../prefabs/bird');
   var Ground = require('../prefabs/ground');
-  var PipeGroup = require('../prefabs/pipeGroup');  
+  var Pipe = require('../prefabs/pipe');
+  var PipeGroup = require('../prefabs/pipeGroup');
+  var Scoreboard = require('../prefabs/scoreboard');  
 
   function Play() {}
   Play.prototype = {
@@ -50,6 +52,9 @@
       this.scoreText = this.game.add.bitmapText(this.game.width/2, 10, 'flappyfont',this.score.toString(), 24);
       this.scoreText.visible = true;
       this.scoreSound = this.game.add.audio('score');
+
+      this.pipeHitSound = this.game.add.audio('pipeHit');
+      this.groundHitSound = this.game.add.audio('groundHit');
     },
 
     update: function() {
@@ -65,6 +70,7 @@
     this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
     this.bird.destroy();
     this.pipes.destroy();
+    this.scoreboard.destroy();
     },
 
     startGame: function() {  
@@ -88,7 +94,16 @@
     },
 
   deathHandler: function() {
-    this.game.state.start('gameover');
+    // this.game.state.start('gameover');
+
+    this.bird.alive = false;
+    this.pipes.callAll('stop');
+    this.pipeGenerator.timer.stop();
+    this.ground.stopScroll();
+
+    this.scoreboard = new Scoreboard(this.game);
+    this.game.add.existing(this.scoreboard);
+    this.scoreboard.show(this.score);
   },
 
   generatePipes: function() {
